@@ -40,39 +40,43 @@ export const LUNAR_PHASES = {
 };
 
 export interface Holiday {
-  day: number;
-  month: number; // 0-indexed
+  date: string; // ISO format
   name: string;
-  nameKh: string;
+  nameKh?: string;
   isArtDay?: boolean;
+  observed?: string;
+  public?: boolean;
 }
 
-// 2026 Public Holidays + Art/Culture Days
-export const HOLIDAYS_2026: Holiday[] = [
-  { day: 1, month: 0, name: "International New Year's Day", nameKh: 'ថ្ងៃបុណ្យចូលឆ្នាំសកល' },
-  { day: 7, month: 0, name: "Victory Day over Genocide", nameKh: 'ទិវាជ័យជម្នះលើរបបប្រល័យពូជសាសន៍' },
-  { day: 3, month: 2, name: "National Culture Day", nameKh: 'ទិវាវប្បធម៌ជាតិ (Art & Culture)', isArtDay: true },
-  { day: 8, month: 2, name: "International Women's Day", nameKh: 'ទិវាអន្តរជាតិនារី' },
-  { day: 14, month: 3, name: "Khmer New Year", nameKh: 'បុណ្យចូលឆ្នាំថ្មី ប្រពៃណីជាតិ' },
-  { day: 15, month: 3, name: "Khmer New Year (World Art Day)", nameKh: 'បុណ្យចូលឆ្នាំថ្មី (ទិវាសិល្បៈពិភពលោក)', isArtDay: true },
-  { day: 16, month: 3, name: "Khmer New Year", nameKh: 'បុណ្យចូលឆ្នាំថ្មី ប្រពៃណីជាតិ' },
-  { day: 1, month: 4, name: "International Labor Day", nameKh: 'ទិវាពលកម្មអន្តរជាតិ' },
-  { day: 14, month: 4, name: "King Sihamoni's Birthday", nameKh: 'ព្រះរាជពិធីបុណ្យចម្រើនព្រះជន្ម ព្រះករុណា' },
-  { day: 1, month: 5, name: "Visak Bochea Day", nameKh: 'ពិធីបុណ្យវិសាខបូជា' }, 
-  { day: 5, month: 5, name: "Royal Plowing Ceremony", nameKh: 'ព្រះរាជពិធីច្រត់ព្រះនង្គ័ល' },
-  { day: 18, month: 5, name: "King Mother's Birthday", nameKh: 'ព្រះរាជពិធីបុណ្យចម្រើនព្រះជន្ម ព្រះវររាជមាតា' },
-  { day: 1, month: 6, name: "Arbour Day", nameKh: 'រុក្ខទិវា' },
-  { day: 24, month: 8, name: "Constitution Day", nameKh: 'ទិវាប្រកាសរដ្ឋធម្មនុញ្ញ' },
-  { day: 6, month: 9, name: "Pchum Ben Festival", nameKh: 'ពិធីបុណ្យភ្ជុំបិណ្ឌ' },
-  { day: 7, month: 9, name: "Pchum Ben Festival", nameKh: 'ពិធីបុណ្យភ្ជុំបិណ្ឌ' },
-  { day: 8, month: 9, name: "Pchum Ben Festival", nameKh: 'ពិធីបុណ្យភ្ជុំបិណ្ឌ' },
-  { day: 15, month: 9, name: "Commemoration Day of King Father", nameKh: 'ទិវាប្រារព្ធពិធីគោរពព្រះវិញ្ញាណក្ខន្ធ ព្រះបរមរតនកោដ្ឋ' },
-  { day: 29, month: 9, name: "King’s Coronation Day", nameKh: 'ព្រះរាជពិធីគ្រងព្រះបរមរាជសម្បត្តិ' },
-  { day: 9, month: 10, name: "Independence Day", nameKh: 'ពិធីបុណ្យឯករាជ្យជាតិ' },
-  { day: 23, month: 10, name: "Water Festival", nameKh: 'ព្រះរាជពិធីបុណ្យអុំទូក' },
-  { day: 24, month: 10, name: "Water Festival", nameKh: 'ព្រះរាជពិធីបុណ្យអុំទូក' },
-  { day: 25, month: 10, name: "Water Festival", nameKh: 'ព្រះរាជពិធីបុណ្យអុំទូក' },
+// Helper to check if a day is one of our custom Art/Culture days
+export const ART_DAYS = [
+  { day: 3, month: 2, name: 'National Culture Day', nameKh: 'ទិវាវប្បធម៌ជាតិ' }, // March 3
+  { day: 15, month: 3, name: 'World Art Day', nameKh: 'ទិវាសិល្បៈពិភពលោក' }, // April 15
 ];
+
+export function isArtDay(date: Date): boolean {
+  return ART_DAYS.some(ad => ad.day === date.getDate() && ad.month === date.getMonth());
+}
+
+// Common Cambodian holiday translations for Google Calendar API
+export const KHMER_HOLIDAY_NAMES: Record<string, string> = {
+  "International New Year's Day": "ថ្ងៃបុណ្យចូលឆ្នាំសកល",
+  "Victory Day over Genocide": "ទិវាជ័យជម្នះលើរបបប្រល័យពូជសាសន៍",
+  "International Women's Day": "ទិវាអន្តរជាតិនារី",
+  "Khmer New Year": "បុណ្យចូលឆ្នាំថ្មី ប្រពៃណីជាតិ",
+  "International Labor Day": "ទិវាពលកម្មអន្តរជាតិ",
+  "Visak Bochea Day": "ពិធីបុណ្យវិសាខបូជា",
+  "Royal Plowing Ceremony": "ព្រះរាជពិធីច្រត់ព្រះនង្គ័ល",
+  "King Sihamoni's Birthday": "ព្រះរាជពិធីបុណ្យចម្រើនព្រះជន្ម ព្រះករុណា",
+  "King Mother's Birthday": "ព្រះរាជពិធីបុណ្យចម្រើនព្រះជន្ម ព្រះវររាជមាតា",
+  "Constitution Day": "ទិវាប្រកាសរដ្ឋធម្មនុញ្ញ",
+  "Pchum Ben Festival": "ពិធីបុណ្យភ្ជុំបិណ្ឌ",
+  "Commemoration Day of King Father": "ទិវាវរជន",
+  "King’s Coronation Day": "ព្រះរាជពិធីគ្រងព្រះបរមរាជសម្បត្តិ",
+  "Independence Day": "ពិធីបុណ្យឯករាជ្យជាតិ",
+  "Water Festival": "ព្រះរាជពិធីបុណ្យអុំទូក",
+  "International New Year": "ថ្ងៃបុណ្យចូលឆ្នាំសកល"
+};
 
 /**
  * Accurate Khmer Lunar calculation using the lunar-javascript library.

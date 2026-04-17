@@ -8,7 +8,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import axios from 'axios';
 import { 
   format, 
   addMonths, 
@@ -21,22 +22,74 @@ import {
   isSameMonth, 
   isSameDay, 
   isToday,
-  getDay
+  getDay,
+  parseISO
 } from 'date-fns';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Info } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Info, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   KHMER_MONTHS, 
   KHMER_DAYS_SHORT, 
   toKhmerNumber, 
-  HOLIDAYS_2026,
   Holiday,
-  getKhmerLunarDay 
+  getKhmerLunarDay,
+  isArtDay,
+  ART_DAYS,
+  KHMER_HOLIDAY_NAMES 
 } from './constants';
-import thngaiSile from './thngai_sile.png'
+
 export default function App() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchHolidays = async () => {
+      const apiKey = import.meta.env.VITE_GOOGLE_CALENDAR_API_KEY;
+      if (!apiKey) {
+        console.warn('VITE_GOOGLE_CALENDAR_API_KEY is missing');
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const year = currentDate.getFullYear();
+        const timeMin = new Date(year, 0, 1).toISOString();
+        const timeMax = new Date(year, 11, 31).toISOString();
+        const calendarId = 'en.kh#holiday@group.v.calendar.google.com';
+
+        const response = await axios.get(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`, {
+          params: {
+            key: apiKey,
+            timeMin,
+            timeMax,
+            singleEvents: true,
+            orderBy: 'startTime',
+          }
+        });
+
+        if (response.data && response.data.items) {
+          const fetchedHolidays = response.data.items.map((item: any) => {
+            const name = item.summary;
+            return {
+              date: item.start.date || item.start.dateTime.split('T')[0],
+              name: name,
+              nameKh: KHMER_HOLIDAY_NAMES[name] || name, 
+              isArtDay: isArtDay(parseISO(item.start.date || item.start.dateTime))
+            };
+          });
+          setHolidays(fetchedHolidays);
+        }
+      } catch (error) {
+        console.error('Error fetching holidays from Google:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHolidays();
+  }, [currentDate.getFullYear()]);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
@@ -55,16 +108,47 @@ export default function App() {
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
 
   const getDayHoliday = (date: Date): Holiday | undefined => {
-    return HOLIDAYS_2026.find(h => h.day === date.getDate() && h.month === date.getMonth());
+    const dayStr = format(date, 'yyyy-MM-dd');
+    // Check dynamic holidays
+    const holiday = holidays.find(h => h.date === dayStr);
+    
+    // Check if it's an art day (manual mapping since API won't have it)
+    if (isArtDay(date)) {
+      return {
+        date: dayStr,
+        name: date.getMonth() === 2 ? 'National Culture Day' : 'World Art Day',
+        nameKh: date.getMonth() === 2 ? 'ទិវាវប្បធម៌ជាតិ' : 'ទិវាសិល្បៈពិភពលោក',
+        isArtDay: true
+      };
+    }
+    return holiday;
   };
 
   const currentMonthHolidays = useMemo(() => {
-    return HOLIDAYS_2026.filter(h => h.month === currentDate.getMonth());
-  }, [currentDate]);
+    const monthHolidays = holidays.filter(h => isSameMonth(parseISO(h.date), monthStart));
+    
+    // Inject Art Days if missing
+    ART_DAYS.forEach(ad => {
+      if (ad.month === currentDate.getMonth()) {
+        const dateObj = new Date(currentDate.getFullYear(), ad.month, ad.day);
+        const dayStr = format(dateObj, 'yyyy-MM-dd');
+        if (!monthHolidays.find(h => h.date === dayStr)) {
+          monthHolidays.push({
+            date: dayStr,
+            name: ad.name,
+            nameKh: ad.nameKh,
+            isArtDay: true
+          });
+        }
+      }
+    });
+
+    return monthHolidays.sort((a, b) => a.date.localeCompare(b.date));
+  }, [currentDate, holidays, monthStart]);
 
   const nextMonthHolidays = useMemo(() => {
-    return HOLIDAYS_2026.filter(h => h.month === nextMonthDate.getMonth());
-  }, [nextMonthDate]);
+    return holidays.filter(h => isSameMonth(parseISO(h.date), nextMonthDate));
+  }, [nextMonthDate, holidays]);
 
   const khmerMonthName = KHMER_MONTHS[currentDate.getMonth()];
   const khmerYear = toKhmerNumber(currentDate.getFullYear());
@@ -74,7 +158,7 @@ export default function App() {
       {/* Header */}
       <header className="flex flex-col md:flex-row justify-between items-end border-b-2 border-khmer-red pb-4">
         <div className="header-left">
-          <h1 className="text-4xl font-moul text-khmer-red">{khmerMonthName} {khmerYear}</h1>
+          <h1 className="text-4xl font-bold text-khmer-red">{khmerMonthName} {khmerYear}</h1>
         </div>
         <div className="header-right text-right text-text-muted text-sm space-y-1">
           <div>ពុទ្ធសករាជ ២៥៦៩ - ២៥៧០</div>
@@ -88,7 +172,7 @@ export default function App() {
         {/* Main Calendar Card */}
         <div className="bento-card md:col-span-2 md:row-span-3 flex flex-col h-full">
           <div className="flex items-center justify-between mb-6">
-            <span className="text-xl font-moul text-khmer-red">ខែ{khmerMonthName} ( {format(currentDate, 'MMMM')} )</span>
+            <span className="text-xl font-bold text-khmer-red">ខែ{khmerMonthName} ( {format(currentDate, 'MMMM')} )</span>
             <div className="flex gap-2">
               <button 
                 onClick={prevMonth}
@@ -162,7 +246,7 @@ export default function App() {
                     {getKhmerLunarDay(day).isSile && isCurrentMonth && (
                       <div className="absolute top-1 left-1" title="ថ្ងៃសីល">
                         <img 
-                          src={thngaiSile} 
+                          src="/art-day-icon.png" 
                           alt="Thngai Sile" 
                           className="w-4 h-4 md:w-5 md:h-5 object-contain"
                           referrerPolicy="no-referrer"
@@ -178,15 +262,22 @@ export default function App() {
 
         {/* Public Holiday List Card */}
         <div className="bento-card md:col-span-1 md:row-span-2 overflow-y-auto">
-          <div className="text-xs uppercase tracking-widest font-bold text-khmer-gold mb-6 border-b border-khmer-border pb-2">
-            ថ្ងៃឈប់សម្រាកសាធារណៈ
+          <div className="flex items-center justify-between mb-6 border-b border-khmer-border pb-2">
+            <div className="text-xs uppercase tracking-widest font-bold text-khmer-gold">
+              ថ្ងៃឈប់សម្រាកសាធារណៈ
+            </div>
+            {isLoading && <Loader2 className="w-3 h-3 animate-spin text-khmer-gold" />}
           </div>
           <div className="space-y-4">
             {currentMonthHolidays.length > 0 ? (
               currentMonthHolidays.map((h, i) => (
                 <div key={i} className={`border-l-4 ${h.isArtDay ? 'border-khmer-gold bg-khmer-gold/5' : 'border-khmer-red'} pl-4 py-2 rounded-r-lg`}>
-                  <h3 className={`text-sm font-bold font-moul leading-tight mb-1 ${h.isArtDay ? 'text-khmer-gold' : 'text-khmer-red'}`}>{h.nameKh}</h3>
-                  <p className="text-[10px] text-text-muted">{toKhmerNumber(h.day)} {KHMER_MONTHS[h.month]} • {h.name}</p>
+                  <h3 className={`text-sm font-bold leading-tight mb-1 ${h.isArtDay ? 'text-khmer-gold' : 'text-khmer-red'}`}>
+                    {h.nameKh || h.name}
+                  </h3>
+                  <p className="text-[10px] text-text-muted">
+                    {toKhmerNumber(parseISO(h.date).getDate())} {KHMER_MONTHS[parseISO(h.date).getMonth()]} • {h.name}
+                  </p>
                 </div>
               ))
             ) : (
@@ -209,7 +300,7 @@ export default function App() {
               <div className="text-4xl">🌕</div>
             )}
           </div>
-          <div className="text-lg font-moul leading-tight">
+          <div className="text-lg font-bold leading-tight">
             ថ្ងៃ {selectedDate ? getKhmerLunarDay(selectedDate).day : ''} {selectedDate ? getKhmerLunarDay(selectedDate).phase : ''} ខែ{selectedDate ? getKhmerLunarDay(selectedDate).month : ''}
           </div>
           <div className="text-[10px] opacity-70 mt-1 uppercase tracking-widest">
@@ -226,7 +317,7 @@ export default function App() {
         <div className="bento-card md:col-span-1 md:row-span-1 flex flex-col justify-between">
           <div>
             <div className="text-[10px] uppercase tracking-widest font-bold text-khmer-gold mb-2">ខែបន្ទាប់ ({format(nextMonthDate, 'MMMM').toUpperCase()})</div>
-            <div className="text-2xl font-moul text-khmer-red">{KHMER_MONTHS[nextMonthDate.getMonth()]}</div>
+            <div className="text-2xl font-bold text-khmer-red">{KHMER_MONTHS[nextMonthDate.getMonth()]}</div>
           </div>
           <div className="text-[10px] text-text-muted leading-relaxed">
             មាន {toKhmerNumber(nextMonthHolidays.length)} ថ្ងៃឈប់សម្រាកធំៗ ។<br />
