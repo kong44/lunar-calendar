@@ -33,7 +33,7 @@ import {
   Holiday,
   getKhmerLunarDay 
 } from './constants';
-
+import thngaiSile from './thngai_sile.png'
 export default function App() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
@@ -162,7 +162,7 @@ export default function App() {
                     {getKhmerLunarDay(day).isSile && isCurrentMonth && (
                       <div className="absolute top-1 left-1" title="ថ្ងៃសីល">
                         <img 
-                          src="/art-day-icon.png" 
+                          src={thngaiSile} 
                           alt="Thngai Sile" 
                           className="w-4 h-4 md:w-5 md:h-5 object-contain"
                           referrerPolicy="no-referrer"
