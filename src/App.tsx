@@ -25,7 +25,6 @@ import {
 } from 'date-fns';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import thngaiSile from './thngai_sile.png'
 import { 
   KHMER_MONTHS, 
   KHMER_DAYS_SHORT, 
@@ -163,9 +162,9 @@ export default function App() {
                     {getKhmerLunarDay(day).isSile && isCurrentMonth && (
                       <div className="absolute top-1 left-1" title="ថ្ងៃសីល">
                         <img 
-                          src={thngaiSile}
+                          src="/art-day-icon.png" 
                           alt="Thngai Sile" 
-                          className="w-3 h-3 md:w-4 md:h-4 object-contain"
+                          className="w-4 h-4 md:w-5 md:h-5 object-contain"
                           referrerPolicy="no-referrer"
                         />
                       </div>
