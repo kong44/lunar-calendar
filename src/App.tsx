@@ -155,21 +155,19 @@ export default function App() {
 
                     {holiday && (
                       <div className="absolute top-1 right-1" title={holiday.nameKh}>
-                        {holiday.isArtDay ? (
-                          <img 
-                            src="/art-day-icon.png" 
-                            alt="Art Day" 
-                            className="w-4 h-4 object-contain"
-                            referrerPolicy="no-referrer"
-                          />
-                        ) : (
-                          <div className="w-1.5 h-1.5 rounded-full bg-khmer-red" />
-                        )}
+                        <div className={`w-1.5 h-1.5 rounded-full ${holiday.isArtDay ? 'bg-khmer-gold' : 'bg-khmer-red'}`} />
                       </div>
                     )}
                     
                     {getKhmerLunarDay(day).isSile && isCurrentMonth && (
-                      <div className="absolute top-1 left-1 text-[8px]" title="ថ្ងៃសីល">☸️</div>
+                      <div className="absolute top-1 left-1" title="ថ្ងៃសីល">
+                        <img 
+                          src="/art-day-icon.png" 
+                          alt="Thngai Sile" 
+                          className="w-4 h-4 md:w-5 md:h-5 object-contain"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
                     )}
                   </button>
                 );
@@ -186,19 +184,9 @@ export default function App() {
           <div className="space-y-4">
             {currentMonthHolidays.length > 0 ? (
               currentMonthHolidays.map((h, i) => (
-                <div key={i} className={`border-l-4 ${h.isArtDay ? 'border-khmer-gold bg-khmer-gold/5' : 'border-khmer-red'} pl-4 py-2 rounded-r-lg flex items-start gap-3`}>
-                  {h.isArtDay && (
-                    <img 
-                      src="/art-day-icon.png" 
-                      alt="Art Icon" 
-                      className="w-6 h-6 object-contain shrink-0"
-                      referrerPolicy="no-referrer"
-                    />
-                  )}
-                  <div>
-                    <h3 className={`text-sm font-bold font-moul leading-tight mb-1 ${h.isArtDay ? 'text-khmer-gold' : 'text-khmer-red'}`}>{h.nameKh}</h3>
-                    <p className="text-[10px] text-text-muted">{toKhmerNumber(h.day)} {KHMER_MONTHS[h.month]} • {h.name}</p>
-                  </div>
+                <div key={i} className={`border-l-4 ${h.isArtDay ? 'border-khmer-gold bg-khmer-gold/5' : 'border-khmer-red'} pl-4 py-2 rounded-r-lg`}>
+                  <h3 className={`text-sm font-bold font-moul leading-tight mb-1 ${h.isArtDay ? 'text-khmer-gold' : 'text-khmer-red'}`}>{h.nameKh}</h3>
+                  <p className="text-[10px] text-text-muted">{toKhmerNumber(h.day)} {KHMER_MONTHS[h.month]} • {h.name}</p>
                 </div>
               ))
             ) : (
@@ -209,7 +197,18 @@ export default function App() {
 
         {/* Selected Day Info Card (Today/Lunar Phase equivalent) */}
         <div className="bento-card md:col-span-1 md:row-span-1 bg-khmer-red text-white border-khmer-red shadow-[4px_4px_0px_theme(colors.khmer-red)] flex flex-col justify-center items-center text-center">
-          <div className="text-4xl mb-2">{getKhmerLunarDay(selectedDate || new Date()).isSile ? '☸️' : '🌕'}</div>
+          <div className="h-12 mb-2 flex items-center justify-center">
+            {getKhmerLunarDay(selectedDate || new Date()).isSile ? (
+              <img 
+                src="/art-day-icon.png" 
+                alt="Sile Icon" 
+                className="w-10 h-10 object-contain brightness-200 contrast-125"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="text-4xl">🌕</div>
+            )}
+          </div>
           <div className="text-lg font-moul leading-tight">
             ថ្ងៃ {selectedDate ? getKhmerLunarDay(selectedDate).day : ''} {selectedDate ? getKhmerLunarDay(selectedDate).phase : ''} ខែ{selectedDate ? getKhmerLunarDay(selectedDate).month : ''}
           </div>
