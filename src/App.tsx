@@ -46,9 +46,9 @@ export default function App() {
 
   useEffect(() => {
     const fetchHolidays = async () => {
-      const apiKey = import.meta.env.GOOGLE_CALENDAR_API_KEY;
+      const apiKey = import.meta.env.VITE_GOOGLE_CALENDAR_API_KEY;
       if (!apiKey) {
-        console.warn('GOOGLE_CALENDAR_API_KEY is missing');
+        console.warn('VITE_GOOGLE_CALENDAR_API_KEY is missing');
         return;
       }
 
